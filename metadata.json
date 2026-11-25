@@ -1,0 +1,6 @@
+{
+  "name": "Iron Titan 8",
+  "description": "Portrait touch-only mobile fighting game on 360x720 viewport (720x1440 resolution) featuring 8 heavyweight muscular fighters from the world's 8 most populated countries with 480 Three.js-baked PNG stills per fighter and Web Audio combat synthesis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
