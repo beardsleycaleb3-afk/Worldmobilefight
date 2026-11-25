@@ -18,6 +18,33 @@ export type LandmarkType =
   | 'rio_peaks'
   | 'river_arch';
 
+export type ArenaLightingStyle =
+  | 'industrial_flicker'
+  | 'shifting_sunlight'
+  | 'volcanic_ember'
+  | 'stadium_sweep';
+
+export interface AttackFrameSpec {
+  startup: number;
+  activeEnd: number;
+  duration: number;
+  damage: number;
+  reachBonus: number;
+  knockback: number;
+}
+
+export interface FighterFrameData {
+  jab: AttackFrameSpec;
+  cross: AttackFrameSpec;
+  special: AttackFrameSpec;
+  projectile: {
+    name: string;
+    color: string;
+    speed: number;
+    damage: number;
+  };
+}
+
 export interface FighterProfile {
   id: string;
   rank: number;
@@ -35,6 +62,7 @@ export interface FighterProfile {
     speed: number;
     reach: number;
   };
+  frameData: FighterFrameData;
   appearance: {
     skinHex: string;
     hairHex: string;
@@ -58,6 +86,7 @@ export interface FighterProfile {
     matPrimary: string;
     matAccent: string;
     landmark: LandmarkType;
+    lightingStyle: ArenaLightingStyle;
   };
 }
 
@@ -75,6 +104,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 193,
     weightKg: 132,
     stats: { power: 93, speed: 75, reach: 86 },
+    frameData: {
+      jab: { startup: 0.08, activeEnd: 0.19, duration: 0.28, damage: 9, reachBonus: 4, knockback: 165 },
+      cross: { startup: 0.14, activeEnd: 0.30, duration: 0.42, damage: 16, reachBonus: 16, knockback: 310 },
+      special: { startup: 0.20, activeEnd: 0.44, duration: 0.58, damage: 27, reachBonus: 36, knockback: 450 },
+      projectile: { name: 'Vajra Shockwave', color: '#f59e0b', speed: 500, damage: 14 },
+    },
     appearance: {
       skinHex: '#9c6644',
       hairHex: '#181412',
@@ -98,6 +133,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#7c4a2d',
       matAccent: '#d97706',
       landmark: 'taj_arch',
+      lightingStyle: 'shifting_sunlight',
     },
   },
   {
@@ -113,6 +149,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 190,
     weightKg: 124,
     stats: { power: 89, speed: 84, reach: 83 },
+    frameData: {
+      jab: { startup: 0.06, activeEnd: 0.17, duration: 0.25, damage: 8, reachBonus: 2, knockback: 150 },
+      cross: { startup: 0.12, activeEnd: 0.28, duration: 0.39, damage: 15, reachBonus: 18, knockback: 285 },
+      special: { startup: 0.18, activeEnd: 0.41, duration: 0.54, damage: 25, reachBonus: 34, knockback: 420 },
+      projectile: { name: 'Jade Chi Pulse', color: '#10b981', speed: 545, damage: 13 },
+    },
     appearance: {
       skinHex: '#d4a373',
       hairHex: '#111216',
@@ -136,6 +178,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#334155',
       matAccent: '#dc2626',
       landmark: 'pagoda',
+      lightingStyle: 'shifting_sunlight',
     },
   },
   {
@@ -151,6 +194,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 196,
     weightKg: 136,
     stats: { power: 95, speed: 78, reach: 89 },
+    frameData: {
+      jab: { startup: 0.07, activeEnd: 0.18, duration: 0.26, damage: 10, reachBonus: 10, knockback: 175 },
+      cross: { startup: 0.13, activeEnd: 0.29, duration: 0.41, damage: 17, reachBonus: 22, knockback: 325 },
+      special: { startup: 0.21, activeEnd: 0.44, duration: 0.58, damage: 28, reachBonus: 34, knockback: 460 },
+      projectile: { name: 'Iron Concussion', color: '#60a5fa', speed: 515, damage: 15 },
+    },
     appearance: {
       skinHex: '#6c4331',
       hairHex: '#171717',
@@ -174,6 +223,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#1e293b',
       matAccent: '#3b82f6',
       landmark: 'steel_bridge',
+      lightingStyle: 'industrial_flicker',
     },
   },
   {
@@ -189,6 +239,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 186,
     weightKg: 118,
     stats: { power: 86, speed: 90, reach: 80 },
+    frameData: {
+      jab: { startup: 0.05, activeEnd: 0.16, duration: 0.23, damage: 8, reachBonus: 0, knockback: 140 },
+      cross: { startup: 0.10, activeEnd: 0.25, duration: 0.36, damage: 14, reachBonus: 12, knockback: 265 },
+      special: { startup: 0.16, activeEnd: 0.38, duration: 0.50, damage: 24, reachBonus: 30, knockback: 395 },
+      projectile: { name: 'Magma Crescent', color: '#fb923c', speed: 575, damage: 13 },
+    },
     appearance: {
       skinHex: '#a47148',
       hairHex: '#141414',
@@ -212,6 +268,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#292524',
       matAccent: '#f59e0b',
       landmark: 'volcano_temple',
+      lightingStyle: 'volcanic_ember',
     },
   },
   {
@@ -227,6 +284,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 195,
     weightKg: 138,
     stats: { power: 96, speed: 72, reach: 90 },
+    frameData: {
+      jab: { startup: 0.09, activeEnd: 0.21, duration: 0.30, damage: 10, reachBonus: 12, knockback: 185 },
+      cross: { startup: 0.15, activeEnd: 0.32, duration: 0.45, damage: 18, reachBonus: 24, knockback: 345 },
+      special: { startup: 0.23, activeEnd: 0.46, duration: 0.62, damage: 30, reachBonus: 40, knockback: 490 },
+      projectile: { name: 'Lahore Tremor', color: '#34d399', speed: 485, damage: 16 },
+    },
     appearance: {
       skinHex: '#b07d56',
       hairHex: '#161616',
@@ -250,6 +313,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#1f2937',
       matAccent: '#10b981',
       landmark: 'fort_minaret',
+      lightingStyle: 'shifting_sunlight',
     },
   },
   {
@@ -265,6 +329,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 194,
     weightKg: 130,
     stats: { power: 97, speed: 77, reach: 87 },
+    frameData: {
+      jab: { startup: 0.07, activeEnd: 0.18, duration: 0.27, damage: 10, reachBonus: 10, knockback: 180 },
+      cross: { startup: 0.13, activeEnd: 0.30, duration: 0.42, damage: 19, reachBonus: 26, knockback: 355 },
+      special: { startup: 0.21, activeEnd: 0.45, duration: 0.59, damage: 30, reachBonus: 38, knockback: 480 },
+      projectile: { name: 'Thunder Spear', color: '#facc15', speed: 530, damage: 16 },
+    },
     appearance: {
       skinHex: '#4f3122',
       hairHex: '#0f0f0f',
@@ -288,6 +358,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#262626',
       matAccent: '#22c55e',
       landmark: 'lagos_skyline',
+      lightingStyle: 'industrial_flicker',
     },
   },
   {
@@ -303,6 +374,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 189,
     weightKg: 122,
     stats: { power: 88, speed: 89, reach: 84 },
+    frameData: {
+      jab: { startup: 0.06, activeEnd: 0.16, duration: 0.24, damage: 8, reachBonus: 6, knockback: 150 },
+      cross: { startup: 0.11, activeEnd: 0.26, duration: 0.37, damage: 15, reachBonus: 16, knockback: 280 },
+      special: { startup: 0.17, activeEnd: 0.40, duration: 0.52, damage: 25, reachBonus: 34, knockback: 415 },
+      projectile: { name: 'Copacabana Arc', color: '#38bdf8', speed: 565, damage: 14 },
+    },
     appearance: {
       skinHex: '#8d5b3c',
       hairHex: '#121010',
@@ -326,6 +403,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#1e293b',
       matAccent: '#eab308',
       landmark: 'rio_peaks',
+      lightingStyle: 'stadium_sweep',
     },
   },
   {
@@ -341,6 +419,12 @@ export const FIGHTERS: FighterProfile[] = [
     heightCm: 191,
     weightKg: 126,
     stats: { power: 91, speed: 81, reach: 83 },
+    frameData: {
+      jab: { startup: 0.07, activeEnd: 0.18, duration: 0.26, damage: 9, reachBonus: 5, knockback: 160 },
+      cross: { startup: 0.13, activeEnd: 0.29, duration: 0.41, damage: 16, reachBonus: 16, knockback: 305 },
+      special: { startup: 0.19, activeEnd: 0.42, duration: 0.56, damage: 26, reachBonus: 34, knockback: 440 },
+      projectile: { name: 'Padma Surge', color: '#f43f5e', speed: 525, damage: 14 },
+    },
     appearance: {
       skinHex: '#8f5f40',
       hairHex: '#141414',
@@ -364,6 +448,7 @@ export const FIGHTERS: FighterProfile[] = [
       matPrimary: '#3f2e26',
       matAccent: '#ef4444',
       landmark: 'river_arch',
+      lightingStyle: 'shifting_sunlight',
     },
   },
 ];

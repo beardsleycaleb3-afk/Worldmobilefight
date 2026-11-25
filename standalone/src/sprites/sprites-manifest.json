@@ -1,0 +1,164 @@
+{
+  "format": "image/png",
+  "stillsPerFighter": 480,
+  "animations": {
+    "idle": 120,
+    "walk": 120,
+    "run": 120,
+    "attack": 120
+  },
+  "fighters": {
+    "india-vikram": {
+      "spritesheet": "src/sprites/india-vikram/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/india-vikram/idle_00.png",
+        "walk": "src/sprites/india-vikram/walk_00.png",
+        "run": "src/sprites/india-vikram/run_00.png",
+        "attack": "src/sprites/india-vikram/attack_00.png"
+      }
+    },
+    "china-zhao": {
+      "spritesheet": "src/sprites/china-zhao/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/china-zhao/idle_00.png",
+        "walk": "src/sprites/china-zhao/walk_00.png",
+        "run": "src/sprites/china-zhao/run_00.png",
+        "attack": "src/sprites/china-zhao/attack_00.png"
+      }
+    },
+    "usa-marcus": {
+      "spritesheet": "src/sprites/usa-marcus/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/usa-marcus/idle_00.png",
+        "walk": "src/sprites/usa-marcus/walk_00.png",
+        "run": "src/sprites/usa-marcus/run_00.png",
+        "attack": "src/sprites/usa-marcus/attack_00.png"
+      }
+    },
+    "indonesia-bima": {
+      "spritesheet": "src/sprites/indonesia-bima/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/indonesia-bima/idle_00.png",
+        "walk": "src/sprites/indonesia-bima/walk_00.png",
+        "run": "src/sprites/indonesia-bima/run_00.png",
+        "attack": "src/sprites/indonesia-bima/attack_00.png"
+      }
+    },
+    "pakistan-tariq": {
+      "spritesheet": "src/sprites/pakistan-tariq/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/pakistan-tariq/idle_00.png",
+        "walk": "src/sprites/pakistan-tariq/walk_00.png",
+        "run": "src/sprites/pakistan-tariq/run_00.png",
+        "attack": "src/sprites/pakistan-tariq/attack_00.png"
+      }
+    },
+    "nigeria-chukwuemeka": {
+      "spritesheet": "src/sprites/nigeria-chukwuemeka/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/nigeria-chukwuemeka/idle_00.png",
+        "walk": "src/sprites/nigeria-chukwuemeka/walk_00.png",
+        "run": "src/sprites/nigeria-chukwuemeka/run_00.png",
+        "attack": "src/sprites/nigeria-chukwuemeka/attack_00.png"
+      }
+    },
+    "brazil-rafael": {
+      "spritesheet": "src/sprites/brazil-rafael/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/brazil-rafael/idle_00.png",
+        "walk": "src/sprites/brazil-rafael/walk_00.png",
+        "run": "src/sprites/brazil-rafael/run_00.png",
+        "attack": "src/sprites/brazil-rafael/attack_00.png"
+      }
+    },
+    "bangladesh-arif": {
+      "spritesheet": "src/sprites/bangladesh-arif/spritesheet.png",
+      "sheetWidth": 864,
+      "sheetHeight": 384,
+      "frameWidth": 72,
+      "frameHeight": 96,
+      "rows": [
+        "idle",
+        "walk",
+        "run",
+        "attack"
+      ],
+      "keyframePngs": {
+        "idle": "src/sprites/bangladesh-arif/idle_00.png",
+        "walk": "src/sprites/bangladesh-arif/walk_00.png",
+        "run": "src/sprites/bangladesh-arif/run_00.png",
+        "attack": "src/sprites/bangladesh-arif/attack_00.png"
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import type { FighterProfile } from '../data/fighters';
+import type { SkinVariant } from './combatTypes';
 
 export const STILL_W = 128;
 export const STILL_H = 160;
@@ -40,6 +41,34 @@ const BAKE_VERSION = 'v1';
 
 const memoryCache = new Map<string, BakedFighterAssets>();
 const portraitMemoryCache = new Map<string, string>();
+
+function getSkinCacheKey(fighterId: string, skin: SkinVariant): string {
+  return skin === 'default' ? fighterId : `${fighterId}__${skin}`;
+}
+
+function applySkinAppearance(fighter: FighterProfile, skin: SkinVariant): FighterProfile {
+  if (skin === 'default') return fighter;
+  if (skin === 'gold') {
+    return {
+      ...fighter,
+      appearance: {
+        ...fighter.appearance,
+        trunksHex: '#ca8a04',
+        accentHex: '#fef08a',
+        wrapHex: '#1e293b',
+      },
+    };
+  }
+  return {
+    ...fighter,
+    appearance: {
+      ...fighter.appearance,
+      trunksHex: '#991b1b',
+      accentHex: '#f87171',
+      wrapHex: '#0f172a',
+    },
+  };
+}
 
 let sharedRenderer: THREE.WebGLRenderer | null = null;
 let sharedScene: THREE.Scene | null = null;
@@ -835,12 +864,17 @@ async function writeCachedFighterBlobs(
   });
 }
 
-export async function bakeFighterPortraitPng(fighter: FighterProfile): Promise<string> {
-  const cached = portraitMemoryCache.get(fighter.id);
+export async function bakeFighterPortraitPng(
+  fighter: FighterProfile,
+  skin: SkinVariant = 'default'
+): Promise<string> {
+  const key = getSkinCacheKey(fighter.id, skin);
+  const cached = portraitMemoryCache.get(key);
   if (cached) return cached;
 
+  const styled = applySkinAppearance(fighter, skin);
   const { renderer, scene, camera } = ensureSharedRenderer();
-  const { rig, dispose } = buildMuscularFighterRig(fighter);
+  const { rig, dispose } = buildMuscularFighterRig(styled);
   scene.add(rig.root);
 
   const prevPos = camera.position.clone();
@@ -855,10 +889,9 @@ export async function bakeFighterPortraitPng(fighter: FighterProfile): Promise<s
   outCanvas.width = 160;
   outCanvas.height = 160;
   const ctx = outCanvas.getContext('2d')!;
-  // Subtle country accent studio halo behind PNG bust
   const grad = ctx.createRadialGradient(80, 74, 12, 80, 80, 82);
-  grad.addColorStop(0, `${fighter.appearance.accentHex}55`);
-  grad.addColorStop(0.65, `${fighter.appearance.trunksHex}44`);
+  grad.addColorStop(0, `${styled.appearance.accentHex}55`);
+  grad.addColorStop(0.65, `${styled.appearance.trunksHex}44`);
   grad.addColorStop(1, '#0b0e1400');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 160, 160);
@@ -871,22 +904,23 @@ export async function bakeFighterPortraitPng(fighter: FighterProfile): Promise<s
 
   const blob = await canvasToPngBlob(outCanvas);
   const url = URL.createObjectURL(blob);
-  portraitMemoryCache.set(fighter.id, url);
+  portraitMemoryCache.set(key, url);
   return url;
 }
 
 export async function bakeFighterSheets(
   fighter: FighterProfile,
-  onProgress?: (completedFrames: number, totalFrames: number) => void
+  onProgress?: (completedFrames: number, totalFrames: number) => void,
+  skin: SkinVariant = 'default'
 ): Promise<BakedFighterAssets> {
-  const existing = memoryCache.get(fighter.id);
+  const key = getSkinCacheKey(fighter.id, skin);
+  const existing = memoryCache.get(key);
   if (existing) {
     onProgress?.(TOTAL_STILLS_PER_FIGHTER, TOTAL_STILLS_PER_FIGHTER);
     return existing;
   }
 
-  // Check IndexedDB PNG cache first
-  const cachedBlobs = await readCachedFighterBlobs(fighter.id);
+  const cachedBlobs = await readCachedFighterBlobs(key);
   if (cachedBlobs && cachedBlobs.idle && cachedBlobs.walk && cachedBlobs.run && cachedBlobs.attack) {
     const [idle, walk, run, attack] = await Promise.all([
       blobToDrawable(cachedBlobs.idle),
@@ -896,21 +930,22 @@ export async function bakeFighterSheets(
     ]);
     const portraitUrl = cachedBlobs.portrait
       ? URL.createObjectURL(cachedBlobs.portrait)
-      : await bakeFighterPortraitPng(fighter);
-    portraitMemoryCache.set(fighter.id, portraitUrl);
+      : await bakeFighterPortraitPng(fighter, skin);
+    portraitMemoryCache.set(key, portraitUrl);
     const result: BakedFighterAssets = {
       fighterId: fighter.id,
       sheets: { idle, walk, run, attack },
       portraitUrl,
       stillCount: TOTAL_STILLS_PER_FIGHTER,
     };
-    memoryCache.set(fighter.id, result);
+    memoryCache.set(key, result);
     onProgress?.(TOTAL_STILLS_PER_FIGHTER, TOTAL_STILLS_PER_FIGHTER);
     return result;
   }
 
+  const styled = applySkinAppearance(fighter, skin);
   const { renderer, scene, camera, isSoftwareGl } = ensureSharedRenderer();
-  const { rig, dispose } = buildMuscularFighterRig(fighter);
+  const { rig, dispose } = buildMuscularFighterRig(styled);
   scene.add(rig.root);
 
   const animKeys: AnimSheetKey[] = ['idle', 'walk', 'run', 'attack'];
@@ -948,15 +983,14 @@ export async function bakeFighterSheets(
     sheetDrawables[anim] = await blobToDrawable(pngBlob);
   }
 
-  // Portrait PNG
-  const portraitUrl = await bakeFighterPortraitPng(fighter);
+  const portraitUrl = await bakeFighterPortraitPng(fighter, skin);
   const portraitResp = await fetch(portraitUrl);
   const portraitBlob = await portraitResp.blob();
 
   scene.remove(rig.root);
   dispose();
 
-  await writeCachedFighterBlobs(fighter.id, {
+  await writeCachedFighterBlobs(key, {
     ...sheetBlobs,
     portrait: portraitBlob,
   });
@@ -967,7 +1001,55 @@ export async function bakeFighterSheets(
     portraitUrl,
     stillCount: TOTAL_STILLS_PER_FIGHTER,
   };
-  memoryCache.set(fighter.id, baked);
+  memoryCache.set(key, baked);
   onProgress?.(TOTAL_STILLS_PER_FIGHTER, TOTAL_STILLS_PER_FIGHTER);
   return baked;
 }
+
+export async function getCachedFighterIds(): Promise<string[]> {
+  const ids = new Set<string>();
+  for (const k of memoryCache.keys()) {
+    ids.add(k.split('__')[0]);
+  }
+  const db = await openCacheDb();
+  if (!db) return Array.from(ids);
+
+  return new Promise((resolve) => {
+    try {
+      const tx = db.transaction(DB_STORE, 'readonly');
+      const store = tx.objectStore(DB_STORE);
+      const req = store.getAllKeys();
+      req.onsuccess = () => {
+        db.close();
+        const keys = Array.isArray(req.result) ? req.result : [];
+        for (const k of keys) {
+          const s = String(k);
+          if (s.startsWith(`${BAKE_VERSION}:`)) {
+            const rawId = s.slice(BAKE_VERSION.length + 1);
+            ids.add(rawId.split('__')[0]);
+          }
+        }
+        resolve(Array.from(ids));
+      };
+      req.onerror = () => {
+        db.close();
+        resolve(Array.from(ids));
+      };
+    } catch {
+      db.close();
+      resolve(Array.from(ids));
+    }
+  });
+}
+
+export async function prewarmAllFighters(
+  fighters: FighterProfile[],
+  onProgress?: (completedFighters: number, totalFighters: number, currentName: string) => void
+): Promise<void> {
+  for (let i = 0; i < fighters.length; i++) {
+    onProgress?.(i, fighters.length, fighters[i].name);
+    await bakeFighterSheets(fighters[i]);
+  }
+  onProgress?.(fighters.length, fighters.length, 'Complete');
+}
+

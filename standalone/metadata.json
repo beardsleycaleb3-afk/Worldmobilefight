@@ -1,0 +1,276 @@
+{
+  "name": "Iron Titan 8",
+  "shortName": "IronTitan8",
+  "version": "2.0.0-standalone",
+  "targetDevice": "TCL Ion V (Android 13 Chrome Portrait)",
+  "viewport": {
+    "width": 360,
+    "height": 720,
+    "canvasWidth": 720,
+    "canvasHeight": 1440
+  },
+  "inputMode": "touch-only",
+  "assets": {
+    "format": "image/png",
+    "stillsPerFighter": 480,
+    "totalStills": 3840
+  },
+  "fighters": [
+    {
+      "id": "india-vikram",
+      "rank": 1,
+      "country": "India",
+      "countryCode": "IND",
+      "populationLabel": "1.45B",
+      "name": "Vikram Rathore",
+      "epithet": "Iron Pehelwan",
+      "discipline": "Kushti Wrestling",
+      "signatureMove": "Vajra Palm Slam",
+      "projectileName": "Vajra Shockwave",
+      "projectileColor": "#f59e0b",
+      "stats": {
+        "power": 93,
+        "speed": 75,
+        "reach": 86
+      },
+      "skinHex": "#9c6644",
+      "trunksHex": "#ea580c",
+      "accentHex": "#facc15",
+      "wrapHex": "#f5efe6",
+      "arena": {
+        "name": "Jaipur Akhara Pit",
+        "skyTop": "#24142c",
+        "skyBottom": "#9a3412",
+        "mat": "#7c4a2d",
+        "accent": "#f59e0b",
+        "lighting": "shifting_sunlight"
+      },
+      "rivalLine": "Strength forged in the akhara pit breaks every challenger.",
+      "victoryQuote": "The akhara earth remembers only the victor."
+    },
+    {
+      "id": "china-zhao",
+      "rank": 2,
+      "country": "China",
+      "countryCode": "CHN",
+      "populationLabel": "1.41B",
+      "name": "Zhao Shen",
+      "epithet": "Jade Colossus",
+      "discipline": "Bajiquan Iron Body",
+      "signatureMove": "Dragon Shoulder Ram",
+      "projectileName": "Jade Chi Pulse",
+      "projectileColor": "#10b981",
+      "stats": {
+        "power": 89,
+        "speed": 84,
+        "reach": 83
+      },
+      "skinHex": "#d4a373",
+      "trunksHex": "#b91c1c",
+      "accentHex": "#10b981",
+      "wrapHex": "#fef3c7",
+      "arena": {
+        "name": "Mount Song Courtyard",
+        "skyTop": "#0f172a",
+        "skyBottom": "#7f1d1d",
+        "mat": "#334155",
+        "accent": "#dc2626",
+        "lighting": "shifting_sunlight"
+      },
+      "rivalLine": "One Bajiquan shoulder strike shatters stone and steel alike.",
+      "victoryQuote": "Balance and explosive force decide the mountain."
+    },
+    {
+      "id": "usa-marcus",
+      "rank": 3,
+      "country": "United States",
+      "countryCode": "USA",
+      "populationLabel": "345M",
+      "name": "Marcus Vance",
+      "epithet": "Gridiron Titan",
+      "discipline": "Heavyweight Boxing",
+      "signatureMove": "Haymaker Blitz",
+      "projectileName": "Iron Concussion",
+      "projectileColor": "#60a5fa",
+      "stats": {
+        "power": 95,
+        "speed": 78,
+        "reach": 89
+      },
+      "skinHex": "#6c4331",
+      "trunksHex": "#1d4ed8",
+      "accentHex": "#e2e8f0",
+      "wrapHex": "#dc2626",
+      "arena": {
+        "name": "Brooklyn Steel Dock",
+        "skyTop": "#090d16",
+        "skyBottom": "#1e3a8a",
+        "mat": "#1e293b",
+        "accent": "#3b82f6",
+        "lighting": "industrial_flicker"
+      },
+      "rivalLine": "Brooklyn steel hits harder than any heavyweight belt.",
+      "victoryQuote": "Keep your hands high — the storm never stops."
+    },
+    {
+      "id": "indonesia-bima",
+      "rank": 4,
+      "country": "Indonesia",
+      "countryCode": "IDN",
+      "populationLabel": "283M",
+      "name": "Bima Santoso",
+      "epithet": "Volcanic Garuda",
+      "discipline": "Pencak Silat Heavy",
+      "signatureMove": "Krakatoa Elbow",
+      "projectileName": "Magma Crescent",
+      "projectileColor": "#fb923c",
+      "stats": {
+        "power": 86,
+        "speed": 90,
+        "reach": 80
+      },
+      "skinHex": "#a47148",
+      "trunksHex": "#1c1917",
+      "accentHex": "#f59e0b",
+      "wrapHex": "#b45309",
+      "arena": {
+        "name": "Merapi Stone Ring",
+        "skyTop": "#18111c",
+        "skyBottom": "#7c2d12",
+        "mat": "#292524",
+        "accent": "#f59e0b",
+        "lighting": "volcanic_ember"
+      },
+      "rivalLine": "Speed is the spark; Merapi turns it into an eruption.",
+      "victoryQuote": "Swift as wind, heavy as volcanic basalt."
+    },
+    {
+      "id": "pakistan-tariq",
+      "rank": 5,
+      "country": "Pakistan",
+      "countryCode": "PAK",
+      "populationLabel": "251M",
+      "name": "Tariq Khan",
+      "epithet": "Sher-e-Punjab",
+      "discipline": "Kabaddi & Pehlwani",
+      "signatureMove": "Lion Tackle",
+      "projectileName": "Lahore Tremor",
+      "projectileColor": "#34d399",
+      "stats": {
+        "power": 96,
+        "speed": 72,
+        "reach": 90
+      },
+      "skinHex": "#b07d56",
+      "trunksHex": "#047857",
+      "accentHex": "#f8fafc",
+      "wrapHex": "#10b981",
+      "arena": {
+        "name": "Lahore Fort Arena",
+        "skyTop": "#062019",
+        "skyBottom": "#065f46",
+        "mat": "#1f2937",
+        "accent": "#10b981",
+        "lighting": "shifting_sunlight"
+      },
+      "rivalLine": "Try to slip a hold once Sher-e-Punjab closes distance.",
+      "victoryQuote": "No rope can hold back the roar of Lahore."
+    },
+    {
+      "id": "nigeria-chukwuemeka",
+      "rank": 6,
+      "country": "Nigeria",
+      "countryCode": "NGA",
+      "populationLabel": "233M",
+      "name": "Chukwuemeka Okafor",
+      "epithet": "Lagos Thunder",
+      "discipline": "Dambe Heavy Fist",
+      "signatureMove": "Thunder Spear Fist",
+      "projectileName": "Thunder Spear",
+      "projectileColor": "#facc15",
+      "stats": {
+        "power": 97,
+        "speed": 77,
+        "reach": 87
+      },
+      "skinHex": "#4f3122",
+      "trunksHex": "#15803d",
+      "accentHex": "#facc15",
+      "wrapHex": "#facc15",
+      "arena": {
+        "name": "Eko Waterfront Ring",
+        "skyTop": "#081c15",
+        "skyBottom": "#1b4332",
+        "mat": "#262626",
+        "accent": "#22c55e",
+        "lighting": "industrial_flicker"
+      },
+      "rivalLine": "One Dambe wrapped fist drops giants before they blink.",
+      "victoryQuote": "Lagos thunder answers every challenge with knockout power."
+    },
+    {
+      "id": "brazil-rafael",
+      "rank": 7,
+      "country": "Brazil",
+      "countryCode": "BRA",
+      "populationLabel": "212M",
+      "name": "Rafael Silva",
+      "epithet": "Rio Colosso",
+      "discipline": "Luta Livre Heavy",
+      "signatureMove": "Martelo Crusher",
+      "projectileName": "Copacabana Arc",
+      "projectileColor": "#38bdf8",
+      "stats": {
+        "power": 88,
+        "speed": 89,
+        "reach": 84
+      },
+      "skinHex": "#8d5b3c",
+      "trunksHex": "#0284c7",
+      "accentHex": "#facc15",
+      "wrapHex": "#38bdf8",
+      "arena": {
+        "name": "Copacabana Night Stage",
+        "skyTop": "#081226",
+        "skyBottom": "#0369a1",
+        "mat": "#1e293b",
+        "accent": "#eab308",
+        "lighting": "stadium_sweep"
+      },
+      "rivalLine": "Under the Rio floodlights, Luta Livre owns both ground and sky.",
+      "victoryQuote": "Rhythm, pressure, and an unstoppable finish."
+    },
+    {
+      "id": "bangladesh-arif",
+      "rank": 8,
+      "country": "Bangladesh",
+      "countryCode": "BGD",
+      "populationLabel": "174M",
+      "name": "Arif Rahman",
+      "epithet": "Bengal Titan",
+      "discipline": "Boli Khela Wrestling",
+      "signatureMove": "Padma Uppercut",
+      "projectileName": "Padma Surge",
+      "projectileColor": "#f43f5e",
+      "stats": {
+        "power": 91,
+        "speed": 81,
+        "reach": 83
+      },
+      "skinHex": "#8f5f40",
+      "trunksHex": "#065f46",
+      "accentHex": "#ef4444",
+      "wrapHex": "#f43f5e",
+      "arena": {
+        "name": "Chittagong Boli Arena",
+        "skyTop": "#0b1915",
+        "skyBottom": "#881337",
+        "mat": "#3f2e26",
+        "accent": "#ef4444",
+        "lighting": "shifting_sunlight"
+      },
+      "rivalLine": "Chittagong Boli wrestling forged this frame for five rounds.",
+      "victoryQuote": "Steadfast as the Bengal river — unmoved."
+    }
+  ]
+}

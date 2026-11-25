@@ -1,12 +1,29 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { soundEngine } from '../audio/soundEngine';
-import type { HapticEventKind, HapticFeedbackEvent, TouchControlState } from '../engine/combatTypes';
+import type {
+  HapticEventKind,
+  HapticFeedbackEvent,
+  InputHistoryEntry,
+  TouchControlState,
+} from '../engine/combatTypes';
+import type { HapticIntensity } from '../storage/gameStorage';
 
 interface ConsoleControllerProps {
   inputRef: { current: TouchControlState };
   furyPercent: number;
   signatureMove: string;
+  projectileName: string;
   hapticEvent?: HapticFeedbackEvent | null;
+  hapticIntensity: HapticIntensity;
+  runThreshold: number;
+  swapButtons: boolean;
+  isTagMode?: boolean;
+  tagCooldown?: number;
+  controlScale?: number;
+  thumbSpacing?: number;
+  chassisOpacity?: number;
+  disabled?: boolean;
+  onInputEvent?: (entry: InputHistoryEntry) => void;
 }
 
 const HAPTIC_PATTERNS: Record<HapticEventKind, number | number[]> = {
@@ -16,16 +33,25 @@ const HAPTIC_PATTERNS: Record<HapticEventKind, number | number[]> = {
   take_damage: [35, 25, 35],
   take_heavy_damage: [85, 30, 65],
   block: [20, 20, 15],
+  parry: [25, 15, 48],
+  guard_break: [95, 25, 75, 25, 95],
+  rope_bounce: [32, 16, 26],
+  tag_swap: [24, 18, 34],
+  throw_tech: [28, 16, 40],
   ko: [110, 40, 80, 40, 140],
 };
 
-function vibrateSafe(pattern: number | number[]): void {
-  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-    try {
-      navigator.vibrate(pattern);
-    } catch {
-      // Ignore environments that block vibration prior to gesture
-    }
+function vibrateWithIntensity(pattern: number | number[], intensity: HapticIntensity): void {
+  if (intensity === 'off') return;
+  if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+  const scale = intensity === 'light' ? 0.5 : 1;
+  const scaled = Array.isArray(pattern)
+    ? pattern.map((ms) => Math.max(6, Math.round(ms * scale)))
+    : Math.max(6, Math.round(pattern * scale));
+  try {
+    navigator.vibrate(scaled);
+  } catch {
+    // Ignore blocked vibration before gesture
   }
 }
 
@@ -35,13 +61,23 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
   inputRef,
   furyPercent,
   signatureMove,
+  projectileName,
   hapticEvent,
+  hapticIntensity,
+  runThreshold,
+  swapButtons,
+  isTagMode = false,
+  tagCooldown = 0,
+  controlScale = 1.0,
+  thumbSpacing = 6,
+  chassisOpacity = 1.0,
+  disabled = false,
+  onInputEvent,
 }) => {
   const padRef = useRef<HTMLDivElement | null>(null);
   const stickTouchIdRef = useRef<number | null>(null);
   const strikeTouchIdRef = useRef<number | null>(null);
   const powerTouchIdRef = useRef<number | null>(null);
-  const mouseActiveRef = useRef<'stick' | 'strike' | 'power' | null>(null);
 
   const [nubOffset, setNubOffset] = useState({ x: 0, y: 0 });
   const [activeDir, setActiveDir] = useState('CENTER');
@@ -49,21 +85,41 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
   const [strikePressed, setStrikePressed] = useState(false);
   const [powerPressed, setPowerPressed] = useState(false);
   const [strikeCharge, setStrikeCharge] = useState(0);
+  const [dirMotionPrimed, setDirMotionPrimed] = useState(false);
 
   const strikeDownAtRef = useRef<number>(0);
   const powerDownAtRef = useRef<number>(0);
   const lastHapticIdRef = useRef<number>(0);
   const chargeReadyVibratedRef = useRef<boolean>(false);
   const prevMoveModeRef = useRef<'IDLE' | 'WALK' | 'RUN'>('IDLE');
+  const dirHistoryRef = useRef<Array<{ dir: string; ts: number }>>([]);
+  const motionPrimedUntilRef = useRef<number>(0);
+  const inputSeqRef = useRef<number>(0);
+  const lastInputTsRef = useRef<number>(performance.now());
 
-  // Fire combat impact / damage haptic waveforms from engine events
+  const emitTapeEvent = useCallback(
+    (dir: string, button: InputHistoryEntry['button']) => {
+      if (!onInputEvent) return;
+      const now = performance.now();
+      const frames = Math.min(99, Math.max(1, Math.round((now - lastInputTsRef.current) / 16.67)));
+      lastInputTsRef.current = now;
+      inputSeqRef.current += 1;
+      onInputEvent({
+        id: inputSeqRef.current,
+        dir,
+        button,
+        framesSincePrev: frames,
+      });
+    },
+    [onInputEvent]
+  );
+
   useEffect(() => {
     if (!hapticEvent || hapticEvent.id === lastHapticIdRef.current) return;
     lastHapticIdRef.current = hapticEvent.id;
-    vibrateSafe(HAPTIC_PATTERNS[hapticEvent.kind]);
-  }, [hapticEvent]);
+    vibrateWithIntensity(HAPTIC_PATTERNS[hapticEvent.kind], hapticIntensity);
+  }, [hapticEvent, hapticIntensity]);
 
-  // Update hold durations smoothly for charge/guard feedback
   useEffect(() => {
     let raf = 0;
     const tick = () => {
@@ -75,7 +131,7 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
         setStrikeCharge(ratio);
         if (ratio >= 1 && !chargeReadyVibratedRef.current) {
           chargeReadyVibratedRef.current = true;
-          vibrateSafe([15, 25, 25]);
+          vibrateWithIntensity([15, 25, 25], hapticIntensity);
         }
       } else {
         chargeReadyVibratedRef.current = false;
@@ -91,14 +147,43 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
         inputRef.current.powerHoldMs = 0;
       }
 
+      if (now > motionPrimedUntilRef.current && dirMotionPrimed) {
+        setDirMotionPrimed(false);
+      }
+
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inputRef]);
+  }, [dirMotionPrimed, hapticIntensity, inputRef]);
+
+  const recordDirectionGesture = useCallback(
+    (dir: string) => {
+      const now = performance.now();
+      const hist = dirHistoryRef.current;
+      const prev = hist[hist.length - 1];
+      if (prev && prev.dir === dir) return;
+
+      hist.push({ dir, ts: now });
+      while (hist.length > 6) hist.shift();
+      if (dir !== 'CENTER') emitTapeEvent(dir, null);
+
+      const recent = hist.filter((h) => now - h.ts <= 420);
+      const seq = recent.map((h) => h.dir).join(',');
+      const hasQuarterCircle = /S,(SE|SW),(E|W)/.test(seq) || /S,(E|W)/.test(seq);
+      const hasDoubleTap = /E,CENTER,E/.test(seq) || /W,CENTER,W/.test(seq);
+
+      if (hasQuarterCircle || hasDoubleTap) {
+        motionPrimedUntilRef.current = now + 420;
+        setDirMotionPrimed(true);
+      }
+    },
+    [emitTapeEvent]
+  );
 
   const updateStickVector = useCallback(
     (clientX: number, clientY: number) => {
+      if (disabled) return;
       const el = padRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -133,18 +218,19 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
       }
 
       inputRef.current.activeDir = dir;
+      recordDirectionGesture(dir);
       setNubOffset({ x: dx, y: dy });
       setActiveDir(dir);
 
       const absX = Math.abs(normX);
-      const nextMode = absX > 0.72 ? 'RUN' : absX > 0.16 ? 'WALK' : 'IDLE';
+      const nextMode = absX > runThreshold ? 'RUN' : absX > 0.16 ? 'WALK' : 'IDLE';
       if (nextMode === 'RUN' && prevMoveModeRef.current !== 'RUN') {
-        vibrateSafe(10);
+        vibrateWithIntensity(10, hapticIntensity);
       }
       prevMoveModeRef.current = nextMode;
       setMoveMode(nextMode);
     },
-    [inputRef]
+    [disabled, hapticIntensity, inputRef, recordDirectionGesture, runThreshold]
   );
 
   const resetStick = useCallback(() => {
@@ -152,14 +238,16 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
     inputRef.current.moveX = 0;
     inputRef.current.moveY = 0;
     inputRef.current.activeDir = 'CENTER';
+    recordDirectionGesture('CENTER');
     setNubOffset({ x: 0, y: 0 });
     setActiveDir('CENTER');
+    prevMoveModeRef.current = 'IDLE';
     setMoveMode('IDLE');
-  }, [inputRef]);
+  }, [inputRef, recordDirectionGesture]);
 
-  // Multi-touch D-Pad / Joystick handlers
   const onPadTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
+    if (disabled) return;
     soundEngine.unlock();
     const touch = e.changedTouches[0];
     if (!touch) return;
@@ -169,6 +257,7 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
 
   const onPadTouchMove = (e: React.TouchEvent) => {
     e.preventDefault();
+    if (disabled) return;
     for (let i = 0; i < e.changedTouches.length; i++) {
       const t = e.changedTouches[i];
       if (t.identifier === stickTouchIdRef.current) {
@@ -188,57 +277,59 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
     }
   };
 
-  // Mouse fallback for desktop testing (does not interfere with TouchEvents)
-  const onPadMouseDown = (e: React.MouseEvent) => {
-    soundEngine.unlock();
-    mouseActiveRef.current = 'stick';
-    updateStickVector(e.clientX, e.clientY);
+  const fireStrikeAction = () => {
+    if (disabled) return;
+    const now = performance.now();
+    // Simultaneous A+B triggers Clinch Grapple (close pocket) or Tag Swap (outside pocket in Tag Mode)
+    if (inputRef.current.powerDown && now - powerDownAtRef.current <= 140) {
+      inputRef.current.grappleTriggerCount += 1;
+      if (isTagMode && tagCooldown <= 0) {
+        inputRef.current.tagTriggerCount += 1;
+      }
+      emitTapeEvent(inputRef.current.activeDir, 'GRAB');
+      return;
+    }
+
+    inputRef.current.strikeTriggerCount += 1;
+    const isLauncher = Math.abs(inputRef.current.moveY) > 0.45;
+    emitTapeEvent(inputRef.current.activeDir, isLauncher ? 'LAUNCH' : 'A');
   };
 
-  useEffect(() => {
-    const onWinMouseMove = (e: MouseEvent) => {
-      if (mouseActiveRef.current === 'stick') {
-        updateStickVector(e.clientX, e.clientY);
+  const firePowerAction = () => {
+    if (disabled) return;
+    const now = performance.now();
+    if (inputRef.current.strikeDown && now - strikeDownAtRef.current <= 140) {
+      inputRef.current.grappleTriggerCount += 1;
+      if (isTagMode && tagCooldown <= 0) {
+        inputRef.current.tagTriggerCount += 1;
       }
-    };
-    const onWinMouseUp = () => {
-      if (mouseActiveRef.current === 'stick') {
-        mouseActiveRef.current = null;
-        resetStick();
-      } else if (mouseActiveRef.current === 'strike') {
-        mouseActiveRef.current = null;
-        inputRef.current.strikeDown = false;
-        setStrikePressed(false);
-      } else if (mouseActiveRef.current === 'power') {
-        mouseActiveRef.current = null;
-        inputRef.current.powerDown = false;
-        setPowerPressed(false);
-      }
-    };
-    window.addEventListener('mousemove', onWinMouseMove);
-    window.addEventListener('mouseup', onWinMouseUp);
-    return () => {
-      window.removeEventListener('mousemove', onWinMouseMove);
-      window.removeEventListener('mouseup', onWinMouseUp);
-    };
-  }, [inputRef, resetStick, updateStickVector]);
+      emitTapeEvent(inputRef.current.activeDir, 'GRAB');
+      return;
+    }
 
-  const triggerHaptic = () => {
-    vibrateSafe(12);
+    if (now <= motionPrimedUntilRef.current && furyPercent >= 30) {
+      inputRef.current.directionalSpecialCount += 1;
+      motionPrimedUntilRef.current = 0;
+      setDirMotionPrimed(false);
+      emitTapeEvent(inputRef.current.activeDir, 'WAVE');
+    } else {
+      inputRef.current.powerTriggerCount += 1;
+      emitTapeEvent(inputRef.current.activeDir, 'B');
+    }
   };
 
-  // Action Button A (Strike / Hold Charge)
   const onStrikeTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
+    if (disabled) return;
     soundEngine.unlock();
     const t = e.changedTouches[0];
     if (!t) return;
     strikeTouchIdRef.current = t.identifier;
     strikeDownAtRef.current = performance.now();
     inputRef.current.strikeDown = true;
-    inputRef.current.strikeTriggerCount += 1;
+    fireStrikeAction();
     setStrikePressed(true);
-    triggerHaptic();
+    vibrateWithIntensity(12, hapticIntensity);
   };
 
   const onStrikeTouchEnd = (e: React.TouchEvent) => {
@@ -253,18 +344,18 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
     }
   };
 
-  // Action Button B (Power / Hold Iron Guard)
   const onPowerTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
+    if (disabled) return;
     soundEngine.unlock();
     const t = e.changedTouches[0];
     if (!t) return;
     powerTouchIdRef.current = t.identifier;
     powerDownAtRef.current = performance.now();
     inputRef.current.powerDown = true;
-    inputRef.current.powerTriggerCount += 1;
+    firePowerAction();
     setPowerPressed(true);
-    triggerHaptic();
+    vibrateWithIntensity(12, hapticIntensity);
   };
 
   const onPowerTouchEnd = (e: React.TouchEvent) => {
@@ -284,77 +375,119 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
   const isLeft = activeDir === 'W' || activeDir === 'NW' || activeDir === 'SW';
   const isRight = activeDir === 'E' || activeDir === 'NE' || activeDir === 'SE';
   const furyReady = furyPercent >= 50;
+  const waveReady = dirMotionPrimed && furyPercent >= 30;
+
+  const buttonA = (
+    <button
+      type="button"
+      onTouchStart={onStrikeTouchStart}
+      onTouchEnd={onStrikeTouchEnd}
+      onTouchCancel={onStrikeTouchEnd}
+      aria-label="Strike Combo Button"
+      className={`arcade-btn-a relative flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full ${
+        strikePressed ? 'pressed' : ''
+      }`}
+    >
+      {strikeCharge > 0.05 && (
+        <span
+          style={{
+            opacity: 0.35 + strikeCharge * 0.65,
+            transform: `scale(${1 + strikeCharge * 0.14})`,
+          }}
+          className="pointer-events-none absolute inset-0 rounded-full border-2 border-white"
+        />
+      )}
+      <span className="font-display text-2xl font-extrabold leading-none text-white">A</span>
+      <span className="text-[9px] font-extrabold tracking-wide text-white/95">
+        {isDown || isUp ? 'LAUNCH' : 'STRIKE'}
+      </span>
+    </button>
+  );
+
+  const buttonB = (
+    <button
+      type="button"
+      onTouchStart={onPowerTouchStart}
+      onTouchEnd={onPowerTouchEnd}
+      onTouchCancel={onPowerTouchEnd}
+      aria-label="Power and Guard Button"
+      className={`arcade-btn-b relative flex h-[68px] w-[68px] flex-col items-center justify-center rounded-full ${
+        powerPressed ? 'pressed' : ''
+      }`}
+    >
+      {(furyReady || waveReady) && (
+        <span
+          className={`pointer-events-none absolute -inset-1.5 rounded-full border-2 ${
+            waveReady ? 'border-cyan-300' : 'border-amber-300/80'
+          }`}
+        />
+      )}
+      <span className="font-display text-2xl font-extrabold leading-none text-slate-950">B</span>
+      <span className="text-[9px] font-extrabold tracking-wide text-slate-950/90">
+        {waveReady ? 'WAVE' : furyReady ? 'FURY' : 'POWER'}
+      </span>
+    </button>
+  );
+
+  const safeScale = Math.max(0.85, Math.min(1.12, controlScale));
+  const safeSpacing = Math.max(0, Math.min(24, thumbSpacing));
+  const safeOpacity = disabled ? 0.65 : Math.max(0.65, Math.min(1.0, chassisOpacity));
 
   return (
-    <div className="console-chassis relative z-20 flex h-[226px] w-full flex-col justify-between px-4 pt-2.5 pb-4 select-none">
-      {/* Top Recessed Trim Line */}
+    <div
+      style={{ opacity: safeOpacity }}
+      className="console-chassis relative z-20 flex h-[226px] w-full flex-col justify-between px-4 pt-2.5 pb-4 select-none transition-opacity"
+    >
       <div className="flex items-center justify-between text-[10px] font-semibold tracking-wider text-slate-400">
-        <span className="font-mono-tabular">
-          PAD · {moveMode}
+        <span className="font-mono-tabular whitespace-nowrap shrink-0">
+          {disabled ? 'REPLAY PLAYBACK' : `PAD · ${moveMode}`}
         </span>
-        <span className="truncate max-w-[165px] text-amber-400/90">
-          {furyReady ? `FURY READY · ${signatureMove}` : 'HOLD A CHARGE · HOLD B GUARD'}
+        <span className="truncate max-w-[205px] text-amber-400/90">
+          {waveReady
+            ? `WAVE · ${projectileName}`
+            : furyReady
+            ? `FURY READY · ${signatureMove}`
+            : isTagMode
+            ? 'A+B GRAB/TAG · ▼+A LAUNCH · ▼▶+B WAVE'
+            : 'A+B GRAB · ROPE SPRING · ▼+A LAUNCH'}
         </span>
       </div>
 
-      {/* Main Dual-Thumb Console Controls */}
-      <div className="flex flex-1 items-center justify-between pt-1">
-        {/* LEFT: D-Pad + Analog Joystick Combo */}
+      <div
+        className="flex flex-1 items-center justify-between pt-1"
+        style={{ paddingLeft: `${safeSpacing}px`, paddingRight: `${safeSpacing}px` }}
+      >
         <div
           ref={padRef}
           onTouchStart={onPadTouchStart}
           onTouchMove={onPadTouchMove}
           onTouchEnd={onPadTouchEnd}
           onTouchCancel={onPadTouchEnd}
-          onMouseDown={onPadMouseDown}
           role="application"
           aria-label="D-Pad and Analog Joystick"
-          className="dpad-well relative flex h-[154px] w-[154px] items-center justify-center rounded-full border-2 border-slate-700/80"
+          style={{ transform: `scale(${safeScale})`, transformOrigin: 'left center' }}
+          className="dpad-well relative flex h-[154px] w-[154px] shrink-0 items-center justify-center rounded-full border-2 border-slate-700/80"
         >
-          {/* Outer RUN ring feedback */}
           <div
             className={`pointer-events-none absolute inset-1.5 rounded-full border transition-colors ${
-              moveMode === 'RUN' ? 'border-amber-400/75' : 'border-slate-700/40'
+              dirMotionPrimed
+                ? 'border-cyan-400/90'
+                : moveMode === 'RUN'
+                ? 'border-amber-400/75'
+                : 'border-slate-700/40'
             }`}
           />
 
-          {/* Sculpted CSS3 D-Pad Cross Arms */}
-          <div
-            className={`dpad-cross-arm pointer-events-none absolute top-2.5 h-10 w-10 rounded-t-lg ${
-              isUp ? 'active' : ''
-            }`}
-          />
-          <div
-            className={`dpad-cross-arm pointer-events-none absolute bottom-2.5 h-10 w-10 rounded-b-lg ${
-              isDown ? 'active' : ''
-            }`}
-          />
-          <div
-            className={`dpad-cross-arm pointer-events-none absolute left-2.5 h-10 w-10 rounded-l-lg ${
-              isLeft ? 'active' : ''
-            }`}
-          />
-          <div
-            className={`dpad-cross-arm pointer-events-none absolute right-2.5 h-10 w-10 rounded-r-lg ${
-              isRight ? 'active' : ''
-            }`}
-          />
+          <div className={`dpad-cross-arm pointer-events-none absolute top-2.5 h-10 w-10 rounded-t-lg ${isUp ? 'active' : ''}`} />
+          <div className={`dpad-cross-arm pointer-events-none absolute bottom-2.5 h-10 w-10 rounded-b-lg ${isDown ? 'active' : ''}`} />
+          <div className={`dpad-cross-arm pointer-events-none absolute left-2.5 h-10 w-10 rounded-l-lg ${isLeft ? 'active' : ''}`} />
+          <div className={`dpad-cross-arm pointer-events-none absolute right-2.5 h-10 w-10 rounded-r-lg ${isRight ? 'active' : ''}`} />
 
-          {/* Directional Labels */}
-          <span className="pointer-events-none absolute top-3.5 text-[9px] font-bold text-slate-300">
-            ▲
-          </span>
-          <span className="pointer-events-none absolute bottom-3.5 text-[9px] font-bold text-slate-300">
-            ▼
-          </span>
-          <span className="pointer-events-none absolute left-3.5 text-[9px] font-bold text-slate-300">
-            ◀
-          </span>
-          <span className="pointer-events-none absolute right-3.5 text-[9px] font-bold text-slate-300">
-            ▶
-          </span>
+          <span className="pointer-events-none absolute top-3.5 text-[9px] font-bold text-slate-300">▲</span>
+          <span className="pointer-events-none absolute bottom-3.5 text-[9px] font-bold text-slate-300">▼</span>
+          <span className="pointer-events-none absolute left-3.5 text-[9px] font-bold text-slate-300">◀</span>
+          <span className="pointer-events-none absolute right-3.5 text-[9px] font-bold text-slate-300">▶</span>
 
-          {/* Floating Analog Joystick Nub */}
           <div
             style={{
               transform: `translate3d(${nubOffset.x}px, ${nubOffset.y}px, 0)`,
@@ -367,81 +500,19 @@ export const ConsoleController: React.FC<ConsoleControllerProps> = ({
           </div>
         </div>
 
-        {/* RIGHT: Two Custom Arcade Action Buttons (A: Strike, B: Power/Guard) */}
-        <div className="flex items-center gap-3.5 pr-0.5">
-          {/* Button B (Lower-Left Offset Ergonomic Thumb Arc) */}
+        <div
+          style={{ transform: `scale(${safeScale})`, transformOrigin: 'right center' }}
+          className="flex shrink-0 items-center gap-3.5 pr-0.5"
+        >
           <div className="mt-8 flex flex-col items-center gap-1.5">
-            <button
-              type="button"
-              onTouchStart={onPowerTouchStart}
-              onTouchEnd={onPowerTouchEnd}
-              onTouchCancel={onPowerTouchEnd}
-              onMouseDown={() => {
-                soundEngine.unlock();
-                mouseActiveRef.current = 'power';
-                powerDownAtRef.current = performance.now();
-                inputRef.current.powerDown = true;
-                inputRef.current.powerTriggerCount += 1;
-                setPowerPressed(true);
-              }}
-              aria-label="Power and Guard Button"
-              className={`arcade-btn-b relative flex h-[68px] w-[68px] flex-col items-center justify-center rounded-full ${
-                powerPressed ? 'pressed' : ''
-              }`}
-            >
-              {furyReady && (
-                <span className="pointer-events-none absolute -inset-1.5 rounded-full border-2 border-amber-300/80" />
-              )}
-              <span className="font-display text-2xl font-extrabold leading-none text-slate-950">
-                B
-              </span>
-              <span className="text-[9px] font-extrabold tracking-wide text-slate-950/90">
-                {furyReady ? 'FURY' : 'POWER'}
-              </span>
-            </button>
+            {swapButtons ? buttonA : buttonB}
           </div>
-
-          {/* Button A (Upper-Right Offset Ergonomic Thumb Arc) */}
           <div className="-mt-7 flex flex-col items-center gap-1.5">
-            <button
-              type="button"
-              onTouchStart={onStrikeTouchStart}
-              onTouchEnd={onStrikeTouchEnd}
-              onTouchCancel={onStrikeTouchEnd}
-              onMouseDown={() => {
-                soundEngine.unlock();
-                mouseActiveRef.current = 'strike';
-                strikeDownAtRef.current = performance.now();
-                inputRef.current.strikeDown = true;
-                inputRef.current.strikeTriggerCount += 1;
-                setStrikePressed(true);
-              }}
-              aria-label="Strike Combo Button"
-              className={`arcade-btn-a relative flex h-[72px] w-[72px] flex-col items-center justify-center rounded-full ${
-                strikePressed ? 'pressed' : ''
-              }`}
-            >
-              {strikeCharge > 0.05 && (
-                <span
-                  style={{
-                    opacity: 0.35 + strikeCharge * 0.65,
-                    transform: `scale(${1 + strikeCharge * 0.14})`,
-                  }}
-                  className="pointer-events-none absolute inset-0 rounded-full border-2 border-white"
-                />
-              )}
-              <span className="font-display text-2xl font-extrabold leading-none text-white">
-                A
-              </span>
-              <span className="text-[9px] font-extrabold tracking-wide text-white/95">
-                STRIKE
-              </span>
-            </button>
+            {swapButtons ? buttonB : buttonA}
           </div>
         </div>
       </div>
 
-      {/* Bottom Hardware Grip Strip */}
       <div className="flex items-center justify-between text-[10px] text-slate-500">
         <span>360×720 · 720×1440 HD+</span>
         <span>480 PNG STILLS/FIGHTER</span>
